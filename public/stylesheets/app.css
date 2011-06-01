@@ -1,0 +1,29 @@
+/* Common definitions across the web application */
+
+#page {
+    height: 100%;
+}
+
+input[type *= "button"] {
+    background: none repeat scroll 0 0 #B1B5EF;
+    border: medium none;
+    margin: 0.1em;
+    padding: 0.2em;
+}
+
+input[type *= "button"]:hover {
+    cursor: pointer;
+    background-color: red;
+}
+
+p.errorMessage {
+    display: none;
+    color: red;
+}
+    .status-error p.errorMessage {
+        display: inherit;
+    }
+    .status-ok p.errorMessage {
+        display: none;
+    }
+
