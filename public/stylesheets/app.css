@@ -1,5 +1,13 @@
 /* Common definitions across the web application */
 
+html {
+    height: 100%;
+}
+
+body {
+    height: 100%;
+}
+
 #page {
     height: 100%;
 }
@@ -16,14 +24,16 @@ input[type *= "button"]:hover {
     background-color: red;
 }
 
-p.errorMessage {
-    display: none;
-    color: red;
+p {
+    margin: 0.1em 0;
 }
-    .status-error p.errorMessage {
-        display: inherit;
-    }
-    .status-ok p.errorMessage {
+    p.errorMessage {
         display: none;
+        color: red;
     }
-
+        .status-error p.errorMessage {
+            display: inherit;
+        }
+        .status-ok p.errorMessage {
+            display: none;
+        }

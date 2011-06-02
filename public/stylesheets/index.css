@@ -1,14 +1,47 @@
-.page-index .address {
-    display: inline-block;
+.page-index div#controls {
+    position: absolute;
+    top:0;
+    left:0;
+    right:0;
+    z-index:1;
+    background: white none;
+}
+
+.page-index div#controls>.bd {
+    padding: 0.4em 1em;
+}
+
+.page-index div.city {
     padding: 0.2em 0.4em;
-    width: 40%;
-    min-width: 200px;
+    font-size: 88%;
+    vertical-align: top;
+}
+
+.page-index div.address {
+    padding: 0.2em 0.4em;
+    width: 100%;
     vertical-align: top;
     font-size: 88%;
 }   
 
-.page-index .address input {
-    width: 96%;
+.page-index label {
+    width: 40px;
+    display: inline-block;
+    text-align: right;
+    color: #555;
+    font-weight: bold;
+}
+
+.page-index input[type='text'] {
+    width: 40%;
+    min-width: 200px;
+    display: inline-block;
+    vertical-align: top;
+}
+
+.page-index .address .messages {
+    display: inline-block;
+    vertical-align: top;
 }
 
 .page-index .address p {
@@ -18,8 +51,18 @@
     .page-index .address p.errorMessage {
         color: red;
     }
+    .page-index .address p.resolved-address {
+        display: none;
+    }
 
 .page-index #map-canvas {
+    margin-top: 16px;
     height: 100%;
     width: 100%;
 }
+
+.page-index #toggle-controls:hover {
+    cursor: pointer;
+    background-color: #dfdfdf;    
+}
+
