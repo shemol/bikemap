@@ -5,8 +5,10 @@
     <meta name="description" content="Two-endpoint maps with bicycling directions and overlays, provided by the Google Maps v3 JS API. Because I have an iPhone, not an Android." />
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
 
-    <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/combo?3.3.0/build/cssreset/reset-min.css&3.3.0/build/cssfonts/fonts-min.css">
-    <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.3.0/build/cssbase/base-min.css">
+    <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/combo?3.3.0/build/cssreset/reset-min.css&3.3.0/build/cssfonts/fonts-min.css"/>
+    <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.3.0/build/cssbase/base-min.css"/>
+    <link rel="stylesheet" type="text/css" href="/plugins/boxy-0.1.4/src/stylesheets/boxy.css"/>
+
     <link rel="stylesheet" type="text/css" href="/stylesheets/app.css"/>
     <link rel="stylesheet" type="text/css" href="/stylesheets/index.css"/>
     
@@ -18,40 +20,75 @@
     <div id="page" class="page-index">
         <div id="controls">
             <div class="bd">
-                <div class="city">
-                    <label for="city">Region</label>
-                    <input id="city" class="address" type="text"></input>
-                    <input id="detect-city" type="button" value="&#x2193;"/>
-                    <input id="help-city" type="button" value="?"/>
-                    <div class="messages">
-                        <p class="errorMessage"></p>
+                <form id="region-form" action="" method="">
+                    <div class="region address">
+                        <label for="region" class="primary">Region:</label>
+                        <input id="region" class="address" type="text" tabindex="10"/>
+                        <input id="detect-region" type="button" value="&#x2193;"/>
+                        <a rel="boxy" href="#detect-region-help" title="What does the Region field do?">?</a>
+                        <div class="messages">
+                            <p class="errorMessage"></p>
+                        </div>
                     </div>
-                </div>
-                <div class="address origin">
-                    <label for="origin" class="primary">From:</label>
-                    <input id="origin" class="address" type="text"></input>
-                    <div class="messages">
-                        <p class="errorMessage"></p>
-                        <p class="resolved-address">Resolved as: <span class="resolution"></span></p>
+                </form>
+                <form id="control-form" action="" method="">
+                    <div class="address origin">
+                        <label for="origin" class="primary">From:</label>
+                        <input id="origin" class="address" type="text" tabindex="20"></input>
+                        <a rel="boxy" href="#origin-help" title="What does the From field do?">?</a>
+                        <div class="messages">
+                            <p class="errorMessage"></p>
+                            <p class="resolved-address">Resolved as: <span class="resolution"></span></p>
+                        </div>
                     </div>
-                </div>
-                <div class="address destination">
-                    <label for="destination" class="primary">To:</label>
-                    <input id="destination" class="address" type="text"></input>
-                    <div class="messages">
-                        <p class="errorMessage"></p>
-                        <p class="resolved-address">Resolved as: <span class="resolution"></span></p>
+                    <div class="address destination">
+                        <label for="destination" class="primary">To:</label>
+                        <input id="destination" name="destination" class="required address" type="text" tabindex="30"></input>
+                        <a rel="boxy" href="#destination-help" title="What does the To field do?">?</a>
+                        <div class="messages">
+                            <p class="errorMessage"></p>
+                            <p class="resolved-address">Resolved as: <span class="resolution"></span></p>
+                        </div>
                     </div>
-                </div>
-                <input id="update" type="button" value="Map"/>
+                    <input id="update" type="submit" value="Map" tabindex="40"/>
+                </form>
             </div>
-            <div id="toggle-controls" class="toggle">toggle</div>
+            <div id="toggle-controls" class="toggle"><div id="toggle-button" class="toggle-button"></div></div>
         </div>
-        <div id="map-canvas"></div>
+        <div id="results">
+            <div id="map-canvas"></div>
+            <div id="directions"></div>
+        </div>
+        <div id="popups">
+            <div id="detect-region-help" class="boxy popup">
+                <p>The addresses or names that you enter in the <code>From</code> and <code>To</code> fields
+                   are interpreted in the context of the visible area of the map. Results within the box are
+                   preferred to results elsewhere.</p>
+                <p>Using the "Region" field is a quick way to zoom the map to your location.</p>
+                <p>If you prefer not to let your browser perform automatic geolocation, of course,
+                   you can always enter your own text or manually zoom the map to the proper
+                   location.</p>
+                <ul class="disclaimers">
+                    <li>Sorry that we can't offer autocompletion to help you out. Google is a little
+                        too stingy with the rate limits to support autocompletion.</li>
+                </ul>
+            </div>
+            <div id="origin-help" class="boxy popup">
+                <p>The <code>From</code> selection is the starting address or place that your bike ride will start.</p>
+                <p>You don't have to enter anything here, if you want your browser to autodetect your current location.</p>
+            </div>
+            <div id="destination-help" class="boxy popup">
+                <p>The <code>To</code> selection is your final destination.</p>
+                <p>You can specify this as a street address (&quot;1234 Main Street&quot;) or as a destination (&quot;Betty&apos;s Coffee Main St&quot;).</p>
+                <p>We'll use the closest matching place that's visible on the map.</p>
+            </div>
+        </div>
     </div>
 
-    <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+    <script type="text/javascript" src="http://maps.google.com/maps/api/js?libraries=places&sensor=false"></script>
     <script type="text/javascript" src="/javascripts/jquery-1.6.1.js"></script>
+    <script type="text/javascript" src="/javascripts/jquery-validate/jquery.validate.js"></script>
+    <script type="text/javascript" src="/plugins/boxy-0.1.4/src/javascripts/jquery.boxy.js"></script>
     <script type="text/javascript" src="/javascripts/app.js"></script>
 </body>
 </html>

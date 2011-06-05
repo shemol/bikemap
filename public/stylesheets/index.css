@@ -4,14 +4,14 @@
     left:0;
     right:0;
     z-index:1;
-    background: white none;
 }
 
 .page-index div#controls>.bd {
     padding: 0.4em 1em;
+    background: white none;
 }
 
-.page-index div.city {
+.page-index div.region {
     padding: 0.2em 0.4em;
     font-size: 88%;
     vertical-align: top;
@@ -24,7 +24,7 @@
     font-size: 88%;
 }   
 
-.page-index label {
+.page-index label.primary {
     width: 40px;
     display: inline-block;
     text-align: right;
@@ -33,11 +33,21 @@
 }
 
 .page-index input[type='text'] {
-    width: 40%;
+    width: 50%;
     min-width: 200px;
+    max-width: 320px;
+    
     display: inline-block;
     vertical-align: top;
 }
+
+/* Error messages */
+.page-index label.error {
+    display: block;
+    color: #FF3300;
+    letter-spacing: 0.02em;
+    padding: 0 0 0 4em;
+}    
 
 .page-index .address .messages {
     display: inline-block;
@@ -55,14 +65,48 @@
         display: none;
     }
 
-.page-index #map-canvas {
-    margin-top: 16px;
+.page-index #results {
     height: 100%;
+    padding-top: 16px;
+}
+
+.page-index #results > div {
+}
+
+.page-index #map-canvas {
+    height: 100%;
+    width: 96%; /* Leave a small "scrolling hook" to the right of the map. */
+}
+
+.page-index #directions {
+    width: 94%;
+    padding: 1em 1em 12em;
+}
+
+.page-index #toggle-controls {
+    padding: 0.2em 1em;
+    text-align: right;
+    height: 17px;
     width: 100%;
+    background: transparent url('/images/header-background.8.png') repeat-x scroll 0 0;
+    
+    position: relative;
 }
+    .page-index #toggle-controls:hover {
+        cursor: pointer;
+        background-color: #dfdfdf;    
+    }
 
-.page-index #toggle-controls:hover {
-    cursor: pointer;
-    background-color: #dfdfdf;    
+.page-index #toggle-button {
+    position: absolute;
+    top: 12px;
+    right: 8em;
+    width: 40px;
+    height: 16px;
+    
+    background: transparent url('/images/header-button-up.8.png') no-repeat scroll 0 0;
 }
-
+    .page-index #toggle-button.closed {
+        background-image: url('/images/header-button-down.8.png');
+        top: 0px;
+    }

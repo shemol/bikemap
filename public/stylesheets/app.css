@@ -19,6 +19,10 @@ input[type *= "button"] {
     padding: 0.2em;
 }
 
+input[type="text"].automatic {
+    font-style: italic;
+}
+
 input[type *= "button"]:hover {
     cursor: pointer;
     background-color: red;
@@ -36,4 +40,39 @@ p {
         }
         .status-ok p.errorMessage {
             display: none;
+        }
+
+.boxy {
+    display: none;
+}
+
+    /* Override the boxy defaults */
+    .boxy-content {
+        padding: 0.6em 1em;    
+    }
+    .boxy-wrapper .title-bar h2 {
+        font-weight: bold;
+        letter-spacing: 0.02em;
+    }
+    
+
+.popup {
+    max-width: 400px;
+    font-size: 92%;
+}
+
+.popup p {
+    margin-bottom: 0.6em;
+}
+
+    .popup ul.disclaimers {
+        color: #555;
+        font-size: 92%;
+        font-style: italic;
+        margin: 0;
+        padding: 1em 0 0;
+    }
+
+        .popup ul.disclaimers > li {
+            list-style: none;
         }
