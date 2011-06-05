@@ -24,7 +24,7 @@
                     <div class="region address">
                         <label for="region" class="primary">Region:</label>
                         <input id="region" class="address" type="text" tabindex="10"/>
-                        <input id="detect-region" type="button" value="&#x2193;"/>
+                        <input id="detect-region" type="button" />
                         <a rel="boxy" href="#detect-region-help" title="What does the Region field do?">?</a>
                         <div class="messages">
                             <p class="errorMessage"></p>
@@ -57,6 +57,10 @@
         </div>
         <div id="results">
             <div id="map-canvas"></div>
+            <div id="map-controls">
+                <div id="unlock-map"><a rel="action" href="javascript:void(0); return false;">Unlock directions</a> to modify the route.</div>
+                <div id="lock-map"><a rel="action" href="javascript:void(0); return false;">Lock directions</a> to make zooming and panning simpler.</div>
+            </div>
             <div id="directions"></div>
         </div>
         <div id="popups">

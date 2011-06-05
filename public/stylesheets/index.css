@@ -41,6 +41,18 @@
     vertical-align: top;
 }
 
+.page-index input#detect-region {
+    margin: 0;
+    padding: 0;
+    width: 16px;
+    height: 16px;
+    background: transparent url('/images/icon-detect-region.8.png') no-repeat scroll 0 0;
+}
+    .page-index input#detect-region:hover {
+        background-position: 0 -16px;
+    }
+
+
 /* Error messages */
 .page-index label.error {
     display: block;
@@ -77,6 +89,15 @@
     height: 100%;
     width: 96%; /* Leave a small "scrolling hook" to the right of the map. */
 }
+    .page-index #lock-map {
+        display: none;
+    }
+    .page-index #results.unlocked #lock-map {
+        display: inherit;
+    }
+    .page-index #results.unlocked #unlock-map {
+        display: none;
+    }
 
 .page-index #directions {
     width: 94%;

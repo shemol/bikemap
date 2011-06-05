@@ -1,38 +1,86 @@
-/* Core Application Code */
-
-/// Create the "public" accessor to hold globally-referencable methods
-var $_ = $_ || {};
+/*
+ * app.js
+ * 
+ * Core application code for the bicycle routing map.
+ * 
+ * Copyright (c) 2011 Matt Schemmel
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of 
+ * this software and associated documentation files (the "Software"), to deal in the 
+ * Software without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the 
+ * Software, and to permit persons to whom the Software is furnished to do so, 
+ * subject to the following conditions:
+ *  - The above copyright notice and this permission notice shall be included in 
+ *    all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE 
+ * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 (function() {
-    // Module shared variables.
-    //    These variables are global in scope and should be checked for validity
-    //    prior to usage.
+  // Module shared variables.
+  //  These variables are global in scope and should be checked for validity
+  //  prior to usage.
+    /// Single instance of the google maps geocoder that will be used to translate
+    /// street addresses into lat/long coordinates
     var geocoder = new google.maps.Geocoder();
+    /**
+     * Holder for the result of the browser geolocation method.
+     * 
+     * @undefined Prior to the first invocation of the geolocator.
+     * @null If geolocation fails for any reason, including permission denial.
+     */ 
     var browserGeolocation;
+    /**
+     * Reference to the Google map object encapsulating the displayed map. 
+     */
     var map;
+    /**
+     * Reference to the directions renderer used to overlay the routing
+     *  directions on the underlying map. Persisted as a module-private
+     *  method so that the rendering options may be updated on the fly.
+     *  (There does not seem to be a random-access method to retrieve
+     *  the renderer from the map reference itself).
+     */
     var renderer;
 
   // CONSTANTS
+    // Geographical center of the United States (not really accurate)
     var US_CENTER = new google.maps.LatLng(37.3002752813443, -93.33984375);
-    var SEATTLE = new google.maps.LatLng(47.6063889, -122.3308333);
-    var DEFAULT_ORIGIN = SEATTLE;
-    var DEFAULT_DESTINATION = new google.maps.LatLng(47.61079236060622, -122.34237670898438);
 
     // Attribute names
     var ATTR_LOCATION = "location";
     
-    // Cookie names and constant values
+    // Cookie names and constant values. Usage TBD
     var COOKIE_CENTER = "app-center"; // Cookie value provides the text and lat/long of the center of the map
     var COOKIE_ZOOM = "app-zoom"; // Cookie value provides the zoom level.
 
   // METHOD DEFINITIONS  
+    /**
+     * Utility method for logging a single message to the console, if available.
+     * 
+     * @param {Object} message
+     * 
+     * TODO Integrate an existing jQuery logging library.
+     * TODO Determine whether are any common build scripts for stripping "log"
+     *       functions from JS files.
+     * TODO How does Rails handle differences between development and production scripts?
+     */
     function log ( message ) {
         if(console) { console.log(message); }
     }
 
+    /**
+     * Toggles the visbility of the map directions controls. Used to maximize the
+     *  amount of space available to the map display itself.
+     */
     function toggleControls() {
-        var controlBodyID = '#controls > .bd';
-        var controlBody = $(controlBodyID);
+        var controlBody = $('#controls > .bd');
         
         // If the main control area is open, toggle it closed; otherwise,
         //  toggle it open.
@@ -40,7 +88,9 @@ var $_ = $_ || {};
         
         if ( isVisible ) {
             controlBody.slideUp(100, function() {
-               // On completion of the slide-up, flip the image
+               // On completion of the slide-up, flip the image.
+               // Ideally, this would probably be on the controls section rather
+               //  than directly modifying the utton's own class.
                 $('#toggle-button').removeClass("open").addClass("closed");
             });
             
@@ -55,30 +105,58 @@ var $_ = $_ || {};
     
     /**
      * Clear the error status from the given element.
-     * @param {Object} el
+     * @param {Object} el DOM element
      */
     function clearError ( el ) {
         $(el).removeClass("status-error");
         $(el).addClass("status-ok");
     }
 
+    /**
+     * Displays the given error message on the error message holder
+     *  ocntained within the given <code>el</code>.
+     * @param {Object} el DOM element.
+     * @param {Object} message The error message to be displayed. May contain
+     *                         HTML formatting.
+     */
     function displayError ( el, message ) {
         $(".errorMessage", el).html(message);
-        $(el).removeClass("status-ok");
-        $(el).addClass("status-error");
+        $(el).removeClass("status-ok").addClass("status-error");
     }
     
+    /**
+     * Close all 'help' dialogs. To be used by triggers that
+     *  represent nontrivial user interaction with the page
+     */
     function closeHelpDialogs() {
         $("a[rel='boxy']").each(function(idx, el) {
-            Boxy.linkedTo(el).hide();
+            var boxy = Boxy.linkedTo(el);
+            
+            if ( boxy ) {
+                boxy.hide();
+            }
         });
     }
 
+    /**
+     * Clear the cached address data associated with area of the page.
+     * 
+     * @param {Object} this DOM element - event trigger
+     * 
+     * TODO - Should this be part of the validation mechanism?
+     */
     function clearResolvedAddress ( ) {
         // Strip the cached 'location' value from the 
         $(this).closest("div.address").removeData(ATTR_LOCATION);
     }
     
+    /**
+     * Records the given location on the block, clearing any
+     *  errors that were previously recorded.
+     *  
+     * @param {Object} el
+     * @param {Object} result
+     */
     function recordLocation ( el, result ) {
         clearError(el);
 
@@ -88,10 +166,24 @@ var $_ = $_ || {};
         $(el).data(ATTR_LOCATION, location);
     }
     
+    /**
+     * Resolve the given text as a Google Place name. This service
+     *  is used as a fallback for the geocoding service that
+     *  recognizes street addresses. (It would be nice to have a
+     *  single service that handled both - need to see whether
+     *  the Places API handles street addresses as well, and whether
+     *  the requet quota is sufficient to handle.)
+     * 
+     * @param {Object} el The block (div) containing the information.
+     * @param {Object} text The text entered by the visitor
+     * @param {Object} lock The Deferred object chained from the caller.
+     *                      May be null.
+     */
     function resolvePlace ( el, text, lock ) {
         var placesService = new google.maps.places.PlacesService(map);
         
         var request = {
+            // Resolve the place name within the bounds of the given p
             bounds: map.getBounds(),
             name: text
         }
@@ -101,6 +193,7 @@ var $_ = $_ || {};
                 log("Single result returned. Using as is.");
                 
                 recordLocation ( el, results[0] );
+                
             } else if ( results.length ) {
                 log("Multiple results returned. Using first result." );
                 
@@ -108,6 +201,7 @@ var $_ = $_ || {};
             
             } else {
                 displayError ( el, "Unable to find lat/long coordinates for this address. Please reenter.");
+                
             }
 
             // If we were given a deferred lock, resolve it now.            
@@ -118,8 +212,16 @@ var $_ = $_ || {};
     }
     
     /**
-     * Resolves the given address
+     * Resolves the given address using either the Google Geocoding API
+     *  or the Google Places API, whichever returns a valid result. The
+     *  primary side effect of this method is to set the resolved value
+     *  as the ATTR_LOCATION data element on the containing block. When
+     *  the call to the services fails, then no value will be set.
+     * 
      * @param {Object} addressEl
+     * 
+     * @return A Deferred promise that will be resolved when the results
+     *         from the remote API call are known.
      */
     function resolveAddress ( els, boundSearch ) {
         var lock = $.Deferred();
@@ -141,7 +243,9 @@ var $_ = $_ || {};
                     var geocodeOpts = {
                         "address": address
                     };
-                    
+
+                    // Allow for unbounded search so that the same geocoding method
+                    //  may be used for the high and low granularity searches.                    
                     if(boundSearch) {
                         geocodeOpts.bounds = map.getBounds();
                     }
@@ -149,6 +253,7 @@ var $_ = $_ || {};
                     // Text found. Resolve the address.
                     geocoder.geocode ( geocodeOpts, function(results, status) {
                         if ( results.length === 1 ) {
+                            // Single result found; best case.
                             recordLocation(el, results[0]);
                             
                             lock.resolve();
@@ -170,6 +275,7 @@ var $_ = $_ || {};
                             resolvePlace ( el, address, lock );
                         }
                     });
+                    
                 } else {
                     // Simply resolve the lock - no resolution to be done.
                     lock.resolve();
@@ -186,7 +292,9 @@ var $_ = $_ || {};
         //  and failed to geolocate through the browser. "undefined" is true
         //  only before we've attempted the first time.
         if ( typeof browserGeolocation === "undefined" ) {
-            browserGeolocation = null; // Default to null
+            browserGeolocation = null; // Default to null. This will be the value
+                                       // of the shared variable if any part of
+                                       // the method does not succeed.
             
             // Ensure the browser supports W3C geolocation...
             if ( navigator.geolocation ) {
@@ -208,6 +316,9 @@ var $_ = $_ || {};
                 if (callback) {
                     $.when(deferred.promise()).then(callback, callback);
                 }
+                
+                // No need for a default branch - if there is no callback, then the
+                //  promised method will simply return as it completes.
             }
         } else {
             // Trigger the callback immediately, as the browser geolocation is
@@ -218,6 +329,11 @@ var $_ = $_ || {};
         }
     }
     
+    /**
+     * Return the origin that should be used. If the visitor has not
+     *  entered a specific origin, we will attempt to use the coords
+     *  from the geolocation mechanism.
+     */
     function getOrigin() {
 	    var result;
 
@@ -235,12 +351,24 @@ var $_ = $_ || {};
         return result;
     }
 
+    /**
+     * Returns the destination that should form the other endpoint of
+     *  the route. No defaulting is used - the visitor must enter a 
+     *  destination.
+     */
     function getDestination() {
         var requestedDestination = $("div.address.destination").data(ATTR_LOCATION);
 
         return requestedDestination;
     }
-
+    
+    /**
+     * Replaces the current route with a new route between the
+     *  given origin and destination.
+     *  
+     * @param {Object} origin Non-null 
+     * @param {Object} destination Non-null
+     */
     function replaceRoute ( origin, destination ) {
         var directionsService = new google.maps.DirectionsService();
         var request = {
@@ -254,16 +382,63 @@ var $_ = $_ || {};
             //  future updates
             if (!renderer) {
                 renderer = new google.maps.DirectionsRenderer({
-                    draggable: false, // Have to leave things drag-proof on the iPhone
-                                      // for now. There's just not enough precision to
-                                      // be able to view
+                    draggable: false, // Leave things drag-proof on the iPhone by
+                                      // default. There's not enough precision to
+                                      // be able to view and adjust.
+                                      
+                    // Pass the panel so that the direction list
+                    //  is available.
                     panel: $('#directions')[0]
                 });
+                
                 renderer.setMap(map);
             }
             
             renderer.setDirections(result);
         });
+    }
+    
+    /**
+     * Update the draggable status of the current map
+     * 
+     * @param {Object} draggable
+     */
+    function setDraggable ( draggable ) {
+        if ( renderer ) {
+            renderer.setOptions ( {
+                "draggable": draggable,
+                "preserveViewport": true /* Don't reset the viewport; just update the route */
+            });
+            
+            // Apparently need to re-render the directions before the
+            //  updated draggability option is respected. Force the
+            //  refresh by just resetting the same directions. (This
+            //  will preserve any updates made, as expected).
+            renderer.setDirections(renderer.getDirections());
+            
+        } else {
+            log("Cannot change draggability; no renderer set.");
+        }
+        
+        // Always return false so that default processing is not
+        //  performed.
+        return false;
+    }
+    
+    /**
+     * Lock down the map so that the route may not be modified.
+     */
+    function lockMap() {
+        $('#results').removeClass('unlocked');
+        return setDraggable(false);
+    }
+    
+    /**
+     * Unlock the map so that the visitor may update the route taken.
+     */
+    function unlockMap() {
+        $('#results').addClass('unlocked');
+        return setDraggable(true);
     }
     
     /**
@@ -281,14 +456,14 @@ var $_ = $_ || {};
                     inputEls.val(address.city + ", " + address.region + " " + address.postalCode);
                 
                 } else {
-                    inputEls.val ( "Automatically detected address")
+                    inputEls.val ( "Automatically detected address");
                     inputEls.addClass ( "automatic" );
                     log("Unable to determine street address from browser geolocation.");
                 }
                 
                 var coords = browserGeolocation.coords || {};
                 if ( coords ) {
-                    center = new google.maps.LatLng(coords.latitude, coords.longitude)
+                    center = new google.maps.LatLng(coords.latitude, coords.longitude);
                     inputEls.data(ATTR_LOCATION, center);
                     
                     updateMap(center, 11);
@@ -304,8 +479,33 @@ var $_ = $_ || {};
     }
     
     /**
+     * Performs a geocoding and updates visible controls.
+     * 
+     * @see #geolocateCenter
+     */
+    function geocodeCenter() {
+        var els = $("div.address.region");
+        
+        $.when(resolveAddress(els, false)).then(function() {
+            var center = els.data(ATTR_LOCATION);
+            
+            if ( center ) {
+                updateMap(center, 11);
+                
+            } else {
+                log("Unable to resolve center.");
+            }
+        });
+        
+        // Always return false to prevent form submission
+        return false;
+    }
+    
+    /**
      * Attempt to restore data caches based on cookie values from previous
      *  sessions with the page.
+     *  
+     * TODO - Umm... this.
      */
     function restoreSession() {
         // Restore the context center.
@@ -314,12 +514,6 @@ var $_ = $_ || {};
         
         // Do not attempt to restore from and to addresses. These are the primary
         //  new information expected to be received on each session.
-    }
-    
-    function initContext() {
-        var result = SEATTLE;
-        
-        return result;
     }
     
     function updateMap(center, zoomLevel) {
@@ -350,32 +544,11 @@ var $_ = $_ || {};
     
     function initialize(){
         var restored = restoreSession();
+
         initMap ( );
-        initContext();
     }
     
-    /**
-     * Performs a geocoding and updates the map center
-     */
-    function geocodeCenter() {
-        var els = $("div.address.region");
-        
-        $.when(resolveAddress(els, false)).then(function() {
-            var center = els.data(ATTR_LOCATION);
-            
-            if ( center ) {
-                updateMap(center, 11);
-                
-            } else {
-                log("Unable to resolve center.");
-            }
-        });
-        
-        // Always return false to prevent form submission
-        return false;
-    }
-    
-    $_.update = function() {
+    function update() {
         $.when(
                 resolveAddress ( $("div.address.origin"), true ),
                 resolveAddress ( $("div.address.destination"), true )
@@ -408,6 +581,12 @@ var $_ = $_ || {};
         }
     }
     
+    /**
+     * Utility function for performing an action an returning false. Used
+     *  to register event handlers
+     *  
+     * @param {Object} fn The method that should be performed.
+     */
     function _submit ( fn ) {
         return function() {
             // Apply the given method to the object, passing any additional arguments
@@ -427,7 +606,7 @@ var $_ = $_ || {};
         $("form#region-form").submit(_submit(geocodeCenter));
       
         // Register 'submit' handler to update the map.
-        $("form#control-form").submit(_submit($_.update));
+        $("form#control-form").submit(_submit(update));
         $("form#control-form").validate({
             messages: {
                 destination: {
@@ -449,6 +628,9 @@ var $_ = $_ || {};
         // Usability tweak. Make sure that all text is autoselected when any
         //  input box receives the focus.
         $('input').focus(function(){this.select()});
+
+        $('div#lock-map a').click(lockMap);
+        $('div#unlock-map a').click(unlockMap);
         
         // Register dialog triggers
         $("a[rel='boxy']").boxy({
