@@ -254,7 +254,9 @@ var $_ = $_ || {};
             //  future updates
             if (!renderer) {
                 renderer = new google.maps.DirectionsRenderer({
-                    draggable: true,
+                    draggable: false, // Have to leave things drag-proof on the iPhone
+                                      // for now. There's just not enough precision to
+                                      // be able to view
                     panel: $('#directions')[0]
                 });
                 renderer.setMap(map);
